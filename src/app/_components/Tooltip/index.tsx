@@ -1,30 +1,32 @@
 import * as React from "react";
-import type { Placement } from "@floating-ui/react";
 import {
-  FloatingPortal,
-  autoUpdate,
-  flip,
-  offset,
-  shift,
-  useDismiss,
   useFloating,
-  useFocus,
+  autoUpdate,
+  offset,
+  flip,
+  shift,
   useHover,
+  useFocus,
+  useDismiss,
+  useRole,
   useInteractions,
   useMergeRefs,
-  useRole,
+  FloatingPortal,
 } from "@floating-ui/react";
+import type { Placement } from "@floating-ui/react";
 
-type TooltipOptions = {
+interface TooltipOptions {
   initialOpen?: boolean;
   placement?: Placement;
+  strategy?: "fixed" | "absolute";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-};
+}
 
 export function useTooltip({
   initialOpen = false,
   placement = "top",
+  strategy = "fixed",
   open: controlledOpen,
   onOpenChange: setControlledOpen,
 }: TooltipOptions = {}) {
@@ -35,6 +37,7 @@ export function useTooltip({
 
   const data = useFloating({
     placement,
+    strategy,
     open,
     onOpenChange: setOpen,
     whileElementsMounted: autoUpdate,
@@ -92,6 +95,8 @@ export function Tooltip({
   children,
   ...options
 }: { children: React.ReactNode } & TooltipOptions) {
+  // This can accept any props as options, e.g. `placement`,
+  // or other positioning options.
   const tooltip = useTooltip(options);
   return (
     <TooltipContext.Provider value={tooltip}>
@@ -108,6 +113,7 @@ export const TooltipTrigger = React.forwardRef<
   const childrenRef = (children as any).ref;
   const ref = useMergeRefs([context.refs.setReference, propRef, childrenRef]);
 
+  // `asChild` allows the user to pass any element as the anchor
   if (asChild && React.isValidElement(children)) {
     return React.cloneElement(
       children,
@@ -123,8 +129,9 @@ export const TooltipTrigger = React.forwardRef<
   return (
     <button
       ref={ref}
+      // The user can style the trigger based on the state
       data-state={context.open ? "open" : "closed"}
-      {...context.getFloatingProps(props)}
+      {...context.getReferenceProps(props)}
     >
       {children}
     </button>
@@ -148,6 +155,7 @@ export const TooltipContent = React.forwardRef<
           ...context.floatingStyles,
           ...style,
         }}
+        data-placement={context.placement}
         {...context.getFloatingProps(props)}
       />
     </FloatingPortal>
